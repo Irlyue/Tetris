@@ -6,13 +6,14 @@
 #include <SDL.h>
 #include <memory>
 #include <SDL_mixer.h>
+#include <SDL_ttf.h>
 #include "brick.h"
 using namespace std;
 
 constexpr int GRID_SIZE = 30;
-constexpr int PREVIEW_SIZE = 150;
 constexpr int MARGIN_SIZE = 5;
-constexpr int STATUS_LINE_SZIE = 150;
+constexpr int PREVIEW_SIZE = MARGIN_SIZE;
+constexpr int STATUS_LINE_SZIE = 200;
 constexpr int NEXT_GRID_DX = 50;
 constexpr int NEXT_GRID_DY = 30;
 
@@ -31,10 +32,6 @@ int i2y(int i, int ncols) {
 	return i / ncols;
 }
 
-void freeMixerMusic(Mix_Music *music){
-	Mix_FreeMusic(music);
-}
-
 class GameBoard;
 
 class Tetris{
@@ -51,13 +48,13 @@ public:
 		post_run();
 	}
 
-
 	void pre_run(){
 		gWindow = SDL_CreateWindow("Teris", SDL_WINDOWPOS_UNDEFINED,
 			SDL_WINDOWPOS_UNDEFINED, _winWidth, _winHeight, SDL_WINDOW_SHOWN);
 		gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
 
-		_bgMusic = shared_ptr<Mix_Music>(Mix_LoadMUS("1757.wav"), freeMixerMusic);
+		_bgMusic = shared_ptr<Mix_Music>(Mix_LoadMUS("1757.wav"), Mix_FreeMusic);
+		_font = shared_ptr<TTF_Font>(TTF_OpenFont("/usr/share/fonts/truetype/Sarai/Sarai.ttf", 28), TTF_CloseFont);
 	}
 
 	void run(){
@@ -90,6 +87,8 @@ public:
 private:
 
 	shared_ptr<Mix_Music> _bgMusic;
+	shared_ptr<TTF_Font> _font;
+	shared_ptr<SDL_Texture> _textTexture;
 
 	bool _running = false;
 	Uint32 _startTime = 0;
@@ -164,6 +163,18 @@ private:
 	void renderScreen(){
 		drawOutline();
 		renderBricks();
+		renderScore();
+	}
+
+	void renderScore(){
+		string scoreText = "Score: ";
+		scoreText += to_string(_scores);
+		SDL_Color color = {0, 0, 0, 0};
+		auto surface = shared_ptr<SDL_Surface>(TTF_RenderText_Solid(_font.get(), scoreText.c_str(), color), SDL_FreeSurface);
+		_textTexture = shared_ptr<SDL_Texture>(SDL_CreateTextureFromSurface(gRenderer, surface.get()), SDL_DestroyTexture);
+
+		SDL_Rect rect = {PREVIEW_SIZE + GRID_SIZE * _ncols + 10, 150, 150, 25};
+		SDL_RenderCopy(gRenderer, _textTexture.get(), nullptr, &rect);
 	}
 
 	void drawOutline(){
@@ -184,9 +195,9 @@ private:
 			info._pos.y = info._pos.y * GRID_SIZE + MARGIN_SIZE + 1;
 		}
 
-		auto nextGrids = _nextBrick.getGrids(_board);
+		auto nextGrids = _nextBrick.getGrids();
 		for(auto info: nextGrids){
-			int x = (info._pos.x + _ncols) * GRID_SIZE + PREVIEW_SIZE + MARGIN_SIZE;
+			int x = (info._pos.x + _ncols / 2) * GRID_SIZE + PREVIEW_SIZE + MARGIN_SIZE;
 			int y = (info._pos.y + 2) * GRID_SIZE + MARGIN_SIZE + 1;
 			grids.emplace_back(info._color, x + NEXT_GRID_DX, y + NEXT_GRID_DY);
 		}

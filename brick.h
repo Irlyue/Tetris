@@ -4,7 +4,6 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
-#include <Windows.h>
 using namespace std;
 
 class GameBoard;
@@ -101,6 +100,12 @@ private:
 	vector<int> _board;
 };
 
+/* There are 4 types of bricks:
+ *  1100   1111    1100    1100
+ *  1100   0000    0110    1000
+ *  0000   0000    0000    1000
+ *  0000   0000    0000    0000
+ */
 const vector<vector<int>> BRICKS = {
 	{1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -117,7 +122,7 @@ class Brick{
 public:
 	Brick() = default;
 
-	Brick(int brickType, int color): _contents(BRICKS[brickType]), _color(color) {
+	Brick(int brickType, int color, int x=0, int y=0): _contents(BRICKS[brickType]), _color(color), _pos{x, y} {
 	}
 
 	// flip left right
@@ -182,7 +187,7 @@ public:
 	}
 
 	int collideWith(GameBoard &gb) {
-		vector<GridInfo> grids = getGrids(gb);
+		vector<GridInfo> grids = getGrids();
 		int ncols = gb.getCols(), nrows = gb.getRows();
 		int nbGrids = gb.getNbGrids();
 		int x, y, p;
@@ -199,7 +204,7 @@ public:
 	}
 
 	void render(vector<GridInfo> &toRender, GameBoard &gb) {
-		auto grids = getGrids(gb);
+		auto grids = getGrids();
 		int ncols = gb.getCols(), nrows = gb.getRows();
 		for (GridInfo &info : grids) {
 			if (inrange(info._pos.x, info._pos.y, ncols, nrows))
@@ -208,8 +213,8 @@ public:
 	}
 
 	void updateBoard(GameBoard &gb) {
-		auto grids = getGrids(gb);
-		int ncols = gb.getCols(), nrows = gb.getRows(), nbGrids = gb.getNbGrids();
+		auto grids = getGrids();
+		int ncols = gb.getCols(), nrows = gb.getRows();
 		for (GridInfo &info : grids) {
 			int p = xy2i(info._pos.x, info._pos.y, ncols);
 			if (inrange(info._pos.x, info._pos.y, ncols, nrows))
@@ -217,7 +222,7 @@ public:
 		}
 	}
 
-	vector<GridInfo> getGrids(GameBoard &gb) {
+	vector<GridInfo> getGrids() {
 		vector<GridInfo> grids;
 		int pRef = getReferenceGridPosition();
 		int ri = pRef / 4, rj = pRef % 4;
@@ -255,6 +260,7 @@ private:
 		// TODO
 	}
 
+	// need extra O(n) space for permutation
 	void permute(vector<int> &a, const vector<int> &p){
 		vector<int> newp(p.size());
 		int n = newp.size();
@@ -299,7 +305,7 @@ public:
 			srand(static_cast<unsigned int>(time(0)));
 	}
 	Brick nextBrick() {
-		return Brick(rand() % BRICKS.size(), rand() % COLORS.size() + 1);
+		return Brick(rand() % BRICKS.size(), rand() % COLORS.size() + 1, 5);
 	}
 };
 
