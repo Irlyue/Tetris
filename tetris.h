@@ -54,7 +54,7 @@ public:
 		gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
 
 		_bgMusic = shared_ptr<Mix_Music>(Mix_LoadMUS("1757.wav"), Mix_FreeMusic);
-		_font = shared_ptr<TTF_Font>(TTF_OpenFont("/usr/share/fonts/truetype/Sarai/Sarai.ttf", 28), TTF_CloseFont);
+		_font = shared_ptr<TTF_Font>(TTF_OpenFont("micross.ttf", 28), TTF_CloseFont);
 	}
 
 	void run(){
