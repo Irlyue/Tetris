@@ -101,6 +101,10 @@ private:
 	int _winWidth = 0;
 	int _boardHeight = 0;
 	int _boardWidth = 0;
+
+	double _dx = 0;
+	double _v = 0.05;
+	Motion _motion = NO_ACTION;
 	GameBoard _board;
 
 	BrickFactory _brickFactory;
@@ -116,27 +120,33 @@ private:
 		Mix_HaltMusic();
 	}
 
+	/*
+	 * This function only records the action but does not perform it.
+	 *
+	 * Refer to function @moveBrick that actually perform the action.
+	 */
 	void handleEvent(){
 		SDL_Event e;
+		_motion = NO_ACTION;
 		while (SDL_PollEvent(&e) != 0) {
 			if (e.type == SDL_QUIT)
 				_running = false;
 			else if (e.type == SDL_KEYDOWN) {
 				switch (e.key.keysym.sym) {
 				case SDLK_a:
-					_currentBrick.moveIfNoCollision(_board, -1, 0);
+				    _motion = GO_LEFT;
 					break;
 				case SDLK_d:
-					_currentBrick.moveIfNoCollision(_board, 1, 0);
+				    _motion = GO_RIGHT;
 					break;
 				case SDLK_s:
-					_currentBrick.moveDown(_board);
+					_motion = GO_DOWN;
 					break;
 				case SDLK_j:
-					_currentBrick.flipIfNoCollision(_board);
+				    _motion = FLIP;
 					break;
 				case SDLK_k:
-					_currentBrick.rotateRightIfNoCollision(_board);
+					_motion = ROTATE_RIGHT;
 					break;
 				default:
 					break;
@@ -150,6 +160,9 @@ private:
 		SDL_RenderClear(gRenderer);
 	}
 
+	/*
+	 * Detect whether the brick has reached its lowest level.
+	 */
 	void detectCollision(){
 		int state = _currentBrick.detectCollision(_board);
 		if (state != NO_COLLISION) {
@@ -157,6 +170,10 @@ private:
 			_scores += _board.handleFilledLines();
 			_currentBrick = _nextBrick;
 			_nextBrick = _brickFactory.nextBrick();
+
+			// if the new brick collide with the game board, GameOver!
+			if(_currentBrick.detectCollision(_board) != NO_COLLISION)
+				_running = false;
 		}
 	}
 
@@ -213,7 +230,11 @@ private:
 	}
 
 	void moveBrick(){
-		if (_nbFrames % 20 == 0) {
+	    _currentBrick.move(_motion, _board);
+
+		_dx += _v;
+		if(_dx >= 1){
+			_dx -= 1;
 			_currentBrick.moveIfNoCollision(_board, 0, 1);
 		}
 	}
